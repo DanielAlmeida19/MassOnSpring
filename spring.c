@@ -11,8 +11,13 @@
 
 #define NUMBER_SPRING_ELEMENTS 16
 #define SPRING_ELEMENT_LENGTH 60
+#define K 20
+#define X_REST (WIDTH / 3)
+#define FRICTION 0.5
 
-float xMass;
+float xMass = WIDTH * 0.7;
+float a = 2; // Isso aqui me parece inútil
+float velocity = 20;
 
 typedef struct {
     Vector2 start, end;
@@ -22,21 +27,19 @@ SpringElement springElements[SPRING_ELEMENT_LENGTH];
 
 void drawSpring() {
     float xSpringDelta = xMass / NUMBER_SPRING_ELEMENTS;
-    for (int i = 0; i < NUMBER_SPRING_ELEMENTS; i++) {
+    float yEnd = sqrt(pow(SPRING_ELEMENT_LENGTH, 2) - pow(xSpringDelta, 2));
+    for (int i = 0; i < NUMBER_SPRING_ELEMENTS; i += 2) {
         Vector2 start = {xSpringDelta * i,
                          FLOOR_Y - (float)MASS_SIDE_LENGTH / 2 + (float)SPRING_ELEMENT_LENGTH / 2};
-        float yEnd = sqrt(pow(SPRING_ELEMENT_LENGTH, 2) - pow(xSpringDelta, 2));
         Vector2 end = {start.x + xSpringDelta, start.y - yEnd};
-
-        if (i % 2 == 0) {
-            DrawLineEx(start, end, THICK, LIGHTGRAY);
-        } else {
-            int endYAux = start.y;
-            start.y = end.y;
-            end.y = endYAux;
-
-            DrawLineEx(start, end, THICK, LIGHTGRAY);
-        }
+        springElements[i] = (SpringElement){start, end};
+        DrawLineEx(start, end, THICK, LIGHTGRAY);
+    }
+    for (int i = 1; i < NUMBER_SPRING_ELEMENTS; i += 2) {
+        Vector2 start = springElements[i - 1].end;
+        Vector2 end = {start.x + xSpringDelta, start.y + yEnd};
+        springElements[i] = (SpringElement){start, end};
+        DrawLineEx(start, end, THICK, LIGHTGRAY);
     }
 }
 
@@ -54,10 +57,9 @@ void drawMass() {
 
 int main() {
     printf("Hello Spring simulation\n");
-    InitWindow(WIDTH, HEIGHT, "Spring on Mass Simulation");
+    InitWindow(WIDTH, HEIGHT, "Mass on Spring Simulation");
     SetTargetFPS(FPS);
 
-    float velocity = 40;
     float deltaTime;
     while (!WindowShouldClose()) {
         BeginDrawing();
@@ -65,11 +67,14 @@ int main() {
         DrawFPS(10, 10);
 
         deltaTime = GetFrameTime();
+        float friction = a > 0 ? FRICTION : -FRICTION;
+        a = -K * (float)(xMass - (float)X_REST) - velocity * FRICTION;
+        velocity += a * deltaTime;
         xMass += velocity * deltaTime;
         drawFloor();
         drawMass();
         drawSpring();
-        DrawText("Spring on Mass Simulation", WIDTH / 10, 100, 30, GREEN);
+        DrawText("Mass on Spring Simulation", WIDTH / 10, 100, 30, GREEN);
         EndDrawing();
     }
 
